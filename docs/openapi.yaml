@@ -1,0 +1,142 @@
+openapi: 3.1.0
+info:
+  title: ToDoEnterprise API
+  version: 1.0.0
+  description: >
+    Baseline API of ToDoEnterprise, a todo service that is horizontally
+    scalable to exactly one process. Extend this contract before extending
+    the code; the gates are watching.
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200":
+          description: The service is alive and optimistic.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+  /todos:
+    get:
+      summary: List todos
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TodoStatus"
+      responses:
+        "200":
+          description: All todos, optionally filtered by status.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Todo"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      summary: Create a todo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        "201":
+          description: Todo created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Todo"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /todos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      summary: Change a todo's status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: "#/components/schemas/TodoStatus"
+      responses:
+        "200":
+          description: Updated todo.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Todo"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      summary: Delete a todo
+      responses:
+        "204":
+          description: Todo deleted. A moment of silence.
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  responses:
+    BadRequest:
+      description: Validation failed (e.g. blank title, unknown status, malformed JSON).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: No todo exists with the given id.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    TodoStatus:
+      type: string
+      enum: [open, in_progress, done]
+    Todo:
+      type: object
+      required: [id, title, status, created_at]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/TodoStatus"
+        created_at:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

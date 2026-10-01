@@ -1,0 +1,2 @@
+# Runtime dependencies. The whole enterprise runs on exactly one of them.
+Flask==3.1.3
